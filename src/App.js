@@ -6,7 +6,8 @@ import {
   signOut, 
   signInWithEmailAndPassword, 
   createUserWithEmailAndPassword,
-  sendEmailVerification 
+  sendEmailVerification,
+  sendPasswordResetEmail // Added for forgot password
 } from "firebase/auth";
 import { doc, onSnapshot, updateDoc, setDoc } from "firebase/firestore";
 import { 
@@ -58,6 +59,22 @@ export default function App() {
     });
     return () => unsub();
   }, [view]);
+
+  // --- NEW: FORGOT PASSWORD LOGIC ---
+  const handleForgotPassword = async () => {
+    if (!email) {
+      alert("Please enter your email address first!");
+      return;
+    }
+    setIsBusy(true);
+    try {
+      await sendPasswordResetEmail(auth, email);
+      alert("Password reset link sent! Please check your Gmail (including Spam and Promotions).");
+    } catch (err) {
+      alert(err.message);
+    }
+    setIsBusy(false);
+  };
 
   const handleChat = () => {
     if (!chatInput.trim() || isBusy) return;
@@ -176,6 +193,16 @@ export default function App() {
               <input style={styles.inputField} type="email" placeholder="Email" value={email} onChange={(e)=>setEmail(e.target.value)} required />
               <input style={{...styles.inputField, marginTop: 10}} type="password" placeholder="Password" value={password} onChange={(e)=>setPassword(e.target.value)} required />
               
+              {/* FORGOT PASSWORD LINK - Only shows on Login Mode */}
+              {authMode === 'login' && (
+                <p 
+                  onClick={handleForgotPassword} 
+                  style={{textAlign: 'right', color: '#1B5E20', cursor: 'pointer', fontSize: 12, marginTop: 8, fontWeight: '600'}}
+                >
+                  Forgot Password?
+                </p>
+              )}
+
               {authMode === 'register' && (
                 <input style={{...styles.inputField, marginTop: 10}} type="password" placeholder="Confirm Password" value={confirmPassword} onChange={(e)=>setConfirmPassword(e.target.value)} required />
               )}
@@ -222,8 +249,8 @@ export default function App() {
 
               {activeTab === 'stats' && (
                 <div style={{padding: 20}}>
-                   <h3 style={{color: '#1B5E20'}}>Environment Stats</h3>
-                   <p>System Online. Firestore sync active for: {user?.email}</p>
+                    <h3 style={{color: '#1B5E20'}}>Environment Stats</h3>
+                    <p>System Online. Firestore sync active for: {user?.email}</p>
                 </div>
               )}
 
