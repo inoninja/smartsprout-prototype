@@ -1,9 +1,18 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { auth, db } from './firebaseConfig';
 import { styles } from './styles';
-import { onAuthStateChanged, signOut, signInWithEmailAndPassword, createUserWithEmailAndPassword } from "firebase/auth";
+import { 
+  onAuthStateChanged, 
+  signOut, 
+  signInWithEmailAndPassword, 
+  createUserWithEmailAndPassword,
+  sendEmailVerification 
+} from "firebase/auth";
 import { doc, onSnapshot, updateDoc, setDoc } from "firebase/firestore";
-import { Leaf, Home, BarChart2, User, Power, Thermometer, Sun, MessageCircle, Send, X, Loader2, LogIn, UserPlus } from 'lucide-react';
+import { 
+  Leaf, Home, BarChart2, User, Power, Thermometer, 
+  Sun, MessageCircle, Send, X, Loader2 
+} from 'lucide-react';
 
 export default function App() {
   const [view, setView] = useState('splash'); 
@@ -16,6 +25,8 @@ export default function App() {
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  
   const [data, setData] = useState({ moisture: 35, temp: 26, humidity: 60, isPumpActive: false, isAutoMode: true });
 
   const [chatInput, setChatInput] = useState('');
@@ -33,7 +44,7 @@ export default function App() {
 
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, (u) => {
-      if (u) {
+      if (u && u.emailVerified) {
         setUser(u);
         const dataUnsub = onSnapshot(doc(db, "users", u.uid), (s) => {
           if (s.exists()) setData(s.data());
@@ -48,21 +59,16 @@ export default function App() {
     return () => unsub();
   }, [view]);
 
-  // --- LOCAL AI LOGIC (Replaces Gemini API) ---
   const handleChat = () => {
     if (!chatInput.trim() || isBusy) return;
-
     const userMessage = { role: 'user', text: chatInput.trim() };
     const query = chatInput.toLowerCase();
-    
     setMessages(prev => [...prev, userMessage]);
     setChatInput('');
     setIsBusy(true);
 
-    // Artificial delay to simulate "thinking"
     setTimeout(() => {
       let response = "";
-
       if (query.includes("status") || query.includes("how") || query.includes("doing") || query.includes("health")) {
         response = `Current stats: Moisture is at ${data.moisture}%, Temp is ${data.temp}°C. `;
         if (data.moisture < 30) response += "I recommend starting the pump, the soil is dry!";
@@ -75,15 +81,14 @@ export default function App() {
           : `The pump is off. Moisture level is ${data.moisture}%.`;
       } 
       else if (query.includes("temp") || query.includes("humidity") || query.includes("weather")) {
-        response = `It's currently ${data.temp}°C with ${data.humidity}% humidity in the sprout environment.`;
+        response = `It's currently ${data.temp}°C with ${data.humidity}% humidity.`;
       } 
       else if (query.includes("hello") || query.includes("hi")) {
         response = "Hi there! I'm your SmartSprout assistant. How can I help your plant today?";
       } 
       else {
-        response = "I can help with plant vitals! Try asking 'How is my plant?' or 'Is the pump running?'";
+        response = "I can help with plant vitals! Try asking 'How is my plant?'";
       }
-
       setMessages(prev => [...prev, { role: 'ai', text: response }]);
       setIsBusy(false);
     }, 600);
@@ -94,15 +99,31 @@ export default function App() {
     setIsBusy(true);
     try {
       if (authMode === 'login') {
-        await signInWithEmailAndPassword(auth, email, password);
+        const userCredential = await signInWithEmailAndPassword(auth, email, password);
+        if (!userCredential.user.emailVerified) {
+          await signOut(auth);
+          alert("Please verify your email via Gmail before logging in!");
+          setIsBusy(false);
+          return;
+        }
       } else {
+        if (password !== confirmPassword) {
+          alert("Passwords do not match!");
+          setIsBusy(false);
+          return;
+        }
+
         const res = await createUserWithEmailAndPassword(auth, email, password);
-        const code = Math.floor(100 + Math.random() * 900);
+        await sendEmailVerification(res.user);
+        
         await setDoc(doc(db, "users", res.user.uid), {
           moisture: 35, temp: 26, humidity: 60, isPumpActive: false, 
-          isAutoMode: true, email: email, verificationCode: code, isVerified: false
+          isAutoMode: true, email: email, isVerified: false
         });
-        alert(`Account Created! Code: ${code}`);
+
+        alert("Success! A verification link has been sent to your Gmail. Please check your inbox and spam folder.");
+        await signOut(auth);
+        setAuthMode('login');
       }
     } catch (err) { 
       alert(err.message); 
@@ -154,6 +175,11 @@ export default function App() {
             <form onSubmit={handleAuth} style={{marginTop: 30}}>
               <input style={styles.inputField} type="email" placeholder="Email" value={email} onChange={(e)=>setEmail(e.target.value)} required />
               <input style={{...styles.inputField, marginTop: 10}} type="password" placeholder="Password" value={password} onChange={(e)=>setPassword(e.target.value)} required />
+              
+              {authMode === 'register' && (
+                <input style={{...styles.inputField, marginTop: 10}} type="password" placeholder="Confirm Password" value={confirmPassword} onChange={(e)=>setConfirmPassword(e.target.value)} required />
+              )}
+
               <button type="submit" style={{...styles.primaryBtn, marginTop: 20}} disabled={isBusy}>
                 {isBusy ? <Loader2 style={{animation:'spin 1s linear infinite'}}/> : (authMode === 'login' ? 'Login' : 'Register')}
               </button>
@@ -177,19 +203,16 @@ export default function App() {
                     <h1 style={{fontSize: '72px', fontWeight: '900', margin: 0}}>{data.moisture}%</h1>
                     <p style={{fontSize: 12, letterSpacing: 2, opacity: 0.8}}>SOIL MOISTURE</p>
                   </div>
-
                   <div style={styles.grid}>
                     <div style={styles.card}><Thermometer color="#1B5E20" size={24}/><h3>{data.temp}°C</h3></div>
                     <div style={styles.card}><Sun color="#1B5E20" size={24}/><h3>{data.humidity}%</h3></div>
                   </div>
-
                   <div style={styles.controlBox}>
                     <span style={{fontWeight: 'bold'}}>Auto Mode</span>
                     <div style={{...styles.toggle, background: data.isAutoMode ? '#1B5E20' : '#ccc'}} onClick={() => handleUpdate({isAutoMode: !data.isAutoMode})}>
                       <div style={{...styles.toggleDot, transform: data.isAutoMode ? 'translateX(27px)' : 'translateX(0px)'}} />
                     </div>
                   </div>
-
                   <button disabled={data.isAutoMode || isBusy} style={{...styles.actionBtn, backgroundColor: data.isAutoMode ? '#EEE' : data.isPumpActive ? '#D32F2F' : '#1B5E20', color: data.isAutoMode ? '#AAA' : '#fff'}} onClick={() => handleUpdate({isPumpActive: !data.isPumpActive})}>
                     {isBusy ? <Loader2 style={{animation:'spin 1s linear infinite'}}/> : <Power size={20}/>}
                     <span>{data.isPumpActive ? "STOP PUMP" : "START PUMP"}</span>
@@ -213,7 +236,6 @@ export default function App() {
               )}
             </div>
 
-            {/* --- LOCAL CHAT INTERFACE --- */}
             <div style={styles.chatHead} onClick={() => setIsChatOpen(!isChatOpen)}>
               {isChatOpen ? <X color="#fff" size={28}/> : <MessageCircle color="#fff" size={28}/>}
             </div>
