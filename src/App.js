@@ -97,15 +97,43 @@ export default function App() {
 
     setTimeout(() => {
       let response = "";
-      if (query.includes("status") || query.includes("how") || query.includes("doing")) {
-        response = `Current stats: Moisture is at ${data.moisture}%, Temp is ${data.temp}°C. Everything looks healthy!`;
+      
+      // Expanded Response Logic
+      if (query.includes("hi") || query.includes("hello") || query.includes("hey")) {
+        response = "Hi there! I'm Sprout AI, your plant's personal assistant. How can I help you today?";
+      }
+      else if (query.includes("status") || query.includes("how") || query.includes("doing")) {
+        response = `The plant is doing great! Moisture: ${data.moisture}%, Temp: ${data.temp}°C, Humidity: ${data.humidity}%. ${data.moisture < 30 ? "It looks a bit thirsty though!" : "Conditions are optimal."}`;
       } 
       else if (query.includes("pump") || query.includes("water")) {
-        response = data.isPumpActive ? "The pump is running." : `The pump is off. Moisture: ${data.moisture}%.`;
+        if (data.isAutoMode) {
+          response = `Auto-Mode is ON. I'll water the plant automatically if moisture drops below 30%. Currently it's at ${data.moisture}%.`;
+        } else {
+          response = data.isPumpActive ? "The water pump is currently running." : `The pump is off. Soil moisture is currently ${data.moisture}%. Shall I turn it on?`;
+        }
       } 
-      else {
-        response = "I can help with plant vitals! Try asking 'How is my plant?'";
+      else if (query.includes("temp") || query.includes("hot") || query.includes("cold")) {
+        response = `The ambient temperature is ${data.temp}°C. Most indoor plants prefer between 18°C and 24°C, so this is ${data.temp > 25 ? "a bit warm." : "just right!"}`;
       }
+      else if (query.includes("humidity") || query.includes("air")) {
+        response = `The humidity is currently ${data.humidity}%. High humidity is great for tropical plants!`;
+      }
+      else if (query.includes("light") || query.includes("sun")) {
+        response = "I can see the brightness levels! Make sure your plant isn't in direct scorching sunlight for too long.";
+      }
+      else if (query.includes("tip") || query.includes("help") || query.includes("advice")) {
+        const tips = [
+          "Don't overwater! Wait until the top inch of soil feels dry.",
+          "Rotate your plant every few weeks so it grows evenly toward the light.",
+          "Dust the leaves occasionally so the plant can breathe better.",
+          "Talk to your plants! Some say it helps them grow faster."
+        ];
+        response = tips[Math.floor(Math.random() * tips.length)];
+      }
+      else {
+        response = "I'm not sure I understand. You can ask me about 'status', 'temperature', 'water', or for a 'gardening tip'!";
+      }
+
       setMessages(prev => [...prev, { role: 'ai', text: response }]);
       setIsBusy(false);
     }, 600);
@@ -176,7 +204,7 @@ export default function App() {
         {view === 'splash' || view === 'postLoginSplash' ? (
           <div style={{
             ...styles.splashBg, 
-            background: view === 'postLoginSplash' ? '#F8FFF9' : '#1B5E20', 
+            background: '#FFFFFF', 
             display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center'
           }}>
             <img 
@@ -184,7 +212,7 @@ export default function App() {
               alt="SmartSprout Logo" 
               style={{ width: 140, height: 140, marginBottom: 15, objectFit: 'contain', animation: 'fadeIn 0.8s ease-out' }}
             />
-            <h1 style={{color: view === 'postLoginSplash' ? '#1B5E20' : '#fff', fontWeight: '900', fontSize: 28, margin: 0}}>
+            <h1 style={{color: '#1B5E20', fontWeight: '900', fontSize: 28, margin: 0}}>
                {view === 'postLoginSplash' ? 'Connecting...' : 'SmartSprout'}
             </h1>
             <div style={{width: '150px', height: '4px', background: 'rgba(0,0,0,0.1)', borderRadius: 10, overflow: 'hidden', marginTop: 25}}>
@@ -264,7 +292,6 @@ export default function App() {
                     </div>
                   </div>
 
-                  {/* Summary Card */}
                   <div style={{ background: '#fff', padding: 20, borderRadius: 20, boxShadow: '0 4px 15px rgba(0,0,0,0.05)', marginBottom: 20, display: 'flex', justifyContent: 'space-around', textAlign: 'center' }}>
                     <div>
                       <div style={{ fontSize: 20, fontWeight: '900', color: '#1B5E20' }}>{data.moisture}%</div>
@@ -277,7 +304,6 @@ export default function App() {
                     </div>
                   </div>
 
-                  {/* Chart Placeholder */}
                   <div style={{ background: '#fff', padding: 30, borderRadius: 25, border: '2px dashed #E0E0E0', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', minHeight: 200 }}>
                     <BarChart2 size={40} color="#CCC" style={{ marginBottom: 15 }} />
                     <h4 style={{ margin: '0 0 8px', color: '#555' }}>Collecting Data</h4>
@@ -301,7 +327,6 @@ export default function App() {
               )}
             </div>
 
-            {/* CHATBOT UI */}
             <div style={styles.chatHead} onClick={() => setIsChatOpen(!isChatOpen)}>
               {isChatOpen ? <X color="#fff" size={28}/> : <MessageCircle color="#fff" size={28}/>}
             </div>
