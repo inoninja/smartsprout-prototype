@@ -35,8 +35,9 @@ export default function App() {
     { role: 'ai', text: "Hello! I'm Sprout AI. I'm connected to your plant's sensors. Ask me anything about its status!" }
   ]);
 
-  // LOGO URL
+  // SETTINGS
   const logoUrl = "https://i.ibb.co/qYKn9vp1/Smart-Sprout-Logo-icon-inspyrenet.png";
+  const appTagline = "Growing smarter, together";
 
   const scrollToBottom = () => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -97,8 +98,6 @@ export default function App() {
 
     setTimeout(() => {
       let response = "";
-      
-      // Expanded Response Logic
       if (query.includes("hi") || query.includes("hello") || query.includes("hey")) {
         response = "Hi there! I'm Sprout AI, your plant's personal assistant. How can I help you today?";
       }
@@ -133,7 +132,6 @@ export default function App() {
       else {
         response = "I'm not sure I understand. You can ask me about 'status', 'temperature', 'water', or for a 'gardening tip'!";
       }
-
       setMessages(prev => [...prev, { role: 'ai', text: response }]);
       setIsBusy(false);
     }, 600);
@@ -215,6 +213,7 @@ export default function App() {
             <h1 style={{color: '#1B5E20', fontWeight: '900', fontSize: 28, margin: 0}}>
                {view === 'postLoginSplash' ? 'Connecting...' : 'SmartSprout'}
             </h1>
+            <p style={{ color: '#666', fontSize: 14, marginTop: 5, fontStyle: 'italic' }}>{appTagline}</p>
             <div style={{width: '150px', height: '4px', background: 'rgba(0,0,0,0.1)', borderRadius: 10, overflow: 'hidden', marginTop: 25}}>
               <div style={{height: '100%', background: '#1B5E20', animation: 'loading 2s infinite'}} />
             </div>
@@ -227,7 +226,8 @@ export default function App() {
                 alt="Auth Logo" 
                 style={{ width: 100, height: 100, marginBottom: 10, objectFit: 'contain', animation: 'fadeIn 0.6s ease-out' }} 
               />
-              <h2 style={{fontWeight: '900', color: '#1B5E20', fontSize: 28}}>{authMode === 'login' ? 'Welcome Back' : 'Join Us'}</h2>
+              <h2 style={{fontWeight: '900', color: '#1B5E20', fontSize: 28, marginBottom: 0}}>{authMode === 'login' ? 'Welcome Back' : 'Join Us'}</h2>
+              <p style={{ color: '#666', fontSize: 12, marginTop: 5 }}>{appTagline}</p>
             </div>
             <form onSubmit={handleAuth} style={{marginTop: 30}}>
               <input style={styles.inputField} type="email" placeholder="Email" value={email} onChange={(e)=>setEmail(e.target.value)} required />
