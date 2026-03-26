@@ -1,6 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { auth, db } from './firebaseConfig';
 import { styles } from './styles';
+
+// --- LOCAL IMAGE IMPORT ---
+// Ensure 'logo.png' is in the same folder as this file.
+import logoLocal from './logo.png'; 
+
 import { 
   onAuthStateChanged, 
   signOut, 
@@ -36,7 +41,6 @@ export default function App() {
   ]);
 
   // SETTINGS
-  const logoUrl = "https://i.ibb.co/qYKn9vp1/Smart-Sprout-Logo-icon-inspyrenet.png";
   const appTagline = "Growing smarter, together";
 
   const scrollToBottom = () => {
@@ -206,7 +210,7 @@ export default function App() {
             display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center'
           }}>
             <img 
-              src={logoUrl} 
+              src={logoLocal} 
               alt="SmartSprout Logo" 
               style={{ width: 140, height: 140, marginBottom: 15, objectFit: 'contain', animation: 'fadeIn 0.8s ease-out' }}
             />
@@ -222,7 +226,7 @@ export default function App() {
           <div style={styles.scrollArea}>
             <div style={{...styles.authHeader, marginTop: 50, display: 'flex', flexDirection: 'column', alignItems: 'center'}}>
               <img 
-                src={logoUrl} 
+                src={logoLocal} 
                 alt="Auth Logo" 
                 style={{ width: 100, height: 100, marginBottom: 10, objectFit: 'contain', animation: 'fadeIn 0.6s ease-out' }} 
               />
@@ -253,7 +257,7 @@ export default function App() {
             {/* DASHBOARD HEADER */}
             <div style={{padding: '30px 20px 10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#fff'}}>
               <div style={{fontWeight: 900, color: '#1B5E20', display: 'flex', alignItems: 'center', gap: 8}}>
-                <img src={logoUrl} alt="Header Logo" style={{width: 28, height: 28, objectFit: 'contain'}} />
+                <img src={logoLocal} alt="Header Logo" style={{width: 28, height: 28, objectFit: 'contain'}} />
                 SmartSprout
               </div>
             </div>
