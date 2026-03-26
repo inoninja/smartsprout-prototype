@@ -50,17 +50,27 @@ export default function App() {
         const dataUnsub = onSnapshot(doc(db, "users", u.uid), (s) => {
           if (s.exists()) setData(s.data());
         });
-        setTimeout(() => setView('dashboard'), 2500);
+
+        // --- ADDED POST-LOGIN SPLASH LOGIC ---
+        if (view === 'auth') {
+          setView('postLoginSplash');
+          setTimeout(() => setView('dashboard'), 2500);
+        } else if (view === 'splash') {
+          setTimeout(() => setView('dashboard'), 2500);
+        }
+        // -------------------------------------
+
         return () => dataUnsub();
       } else {
         setUser(null);
-        if (view !== 'dashboard') setTimeout(() => setView('auth'), 2500);
+        if (view !== 'dashboard' && view !== 'postLoginSplash') {
+           setTimeout(() => setView('auth'), 2500);
+        }
       }
     });
     return () => unsub();
   }, [view]);
 
-  // --- NEW: FORGOT PASSWORD LOGIC ---
   const handleForgotPassword = async () => {
     if (!email) {
       alert("Please enter your email address first!");
@@ -175,12 +185,15 @@ export default function App() {
       `}</style>
 
       <div style={styles.phoneFrame}>
-        {view === 'splash' ? (
-          <div style={styles.splashBg}>
-            <Leaf size={70} color="#fff" fill="#fff" />
-            <h1 style={{color: '#fff', fontWeight: '900'}}>SmartSprout</h1>
-            <div style={{width: '150px', height: '4px', background: 'rgba(255,255,255,0.2)', borderRadius: 10, overflow: 'hidden', marginTop: 20}}>
-              <div style={{height: '100%', background: '#fff', animation: 'loading 2s infinite'}} />
+        {/* VIEW: INITIAL SPLASH OR POST-LOGIN TRANSITION */}
+        {view === 'splash' || view === 'postLoginSplash' ? (
+          <div style={{...styles.splashBg, background: view === 'postLoginSplash' ? '#fff' : '#1B5E20'}}>
+            <Leaf size={70} color={view === 'postLoginSplash' ? '#1B5E20' : '#fff'} fill={view === 'postLoginSplash' ? '#1B5E20' : '#fff'} />
+            <h1 style={{color: view === 'postLoginSplash' ? '#1B5E20' : '#fff', fontWeight: '900'}}>
+               {view === 'postLoginSplash' ? 'Connecting...' : 'SmartSprout'}
+            </h1>
+            <div style={{width: '150px', height: '4px', background: 'rgba(0,0,0,0.1)', borderRadius: 10, overflow: 'hidden', marginTop: 20}}>
+              <div style={{height: '100%', background: '#1B5E20', animation: 'loading 2s infinite'}} />
             </div>
           </div>
         ) : view === 'auth' ? (
@@ -193,7 +206,6 @@ export default function App() {
               <input style={styles.inputField} type="email" placeholder="Email" value={email} onChange={(e)=>setEmail(e.target.value)} required />
               <input style={{...styles.inputField, marginTop: 10}} type="password" placeholder="Password" value={password} onChange={(e)=>setPassword(e.target.value)} required />
               
-              {/* FORGOT PASSWORD LINK - Only shows on Login Mode */}
               {authMode === 'login' && (
                 <p 
                   onClick={handleForgotPassword} 
