@@ -7,16 +7,16 @@ import {
   signInWithEmailAndPassword, 
   createUserWithEmailAndPassword,
   sendEmailVerification,
-  sendPasswordResetEmail // Added for forgot password
+  sendPasswordResetEmail 
 } from "firebase/auth";
 import { doc, onSnapshot, updateDoc, setDoc } from "firebase/firestore";
 import { 
-  Leaf, Home, BarChart2, User, Power, Thermometer, 
+  Home, BarChart2, User, Power, Thermometer, 
   Sun, MessageCircle, Send, X, Loader2 
 } from 'lucide-react';
 
 export default function App() {
-  const [view, setView] = useState('splash'); 
+  const [view, setView] = useState('splash'); // 'splash', 'auth', 'postLoginSplash', 'dashboard'
   const [authMode, setAuthMode] = useState('login'); 
   const [activeTab, setActiveTab] = useState('home');
   const [isChatOpen, setIsChatOpen] = useState(false);
@@ -35,6 +35,9 @@ export default function App() {
     { role: 'ai', text: "Hello! I'm Sprout AI. I'm connected to your plant's sensors. Ask me anything about its status!" }
   ]);
 
+  // LOGO URL
+  const logoUrl = "https://i.ibb.co/qYKn9vp1/Smart-Sprout-Logo-icon-inspyrenet.png";
+
   const scrollToBottom = () => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
@@ -51,14 +54,12 @@ export default function App() {
           if (s.exists()) setData(s.data());
         });
 
-        // --- ADDED POST-LOGIN SPLASH LOGIC ---
         if (view === 'auth') {
           setView('postLoginSplash');
           setTimeout(() => setView('dashboard'), 2500);
         } else if (view === 'splash') {
           setTimeout(() => setView('dashboard'), 2500);
         }
-        // -------------------------------------
 
         return () => dataUnsub();
       } else {
@@ -79,7 +80,7 @@ export default function App() {
     setIsBusy(true);
     try {
       await sendPasswordResetEmail(auth, email);
-      alert("Password reset link sent! Please check your Gmail (including Spam and Promotions).");
+      alert("Password reset link sent! Check your Gmail.");
     } catch (err) {
       alert(err.message);
     }
@@ -96,22 +97,11 @@ export default function App() {
 
     setTimeout(() => {
       let response = "";
-      if (query.includes("status") || query.includes("how") || query.includes("doing") || query.includes("health")) {
-        response = `Current stats: Moisture is at ${data.moisture}%, Temp is ${data.temp}°C. `;
-        if (data.moisture < 30) response += "I recommend starting the pump, the soil is dry!";
-        else if (data.moisture > 75) response += "The soil is very well hydrated.";
-        else response += "Everything looks healthy!";
+      if (query.includes("status") || query.includes("how") || query.includes("doing")) {
+        response = `Current stats: Moisture is at ${data.moisture}%, Temp is ${data.temp}°C. Everything looks healthy!`;
       } 
       else if (query.includes("pump") || query.includes("water")) {
-        response = data.isPumpActive 
-          ? "The water pump is currently running." 
-          : `The pump is off. Moisture level is ${data.moisture}%.`;
-      } 
-      else if (query.includes("temp") || query.includes("humidity") || query.includes("weather")) {
-        response = `It's currently ${data.temp}°C with ${data.humidity}% humidity.`;
-      } 
-      else if (query.includes("hello") || query.includes("hi")) {
-        response = "Hi there! I'm your SmartSprout assistant. How can I help your plant today?";
+        response = data.isPumpActive ? "The pump is running." : `The pump is off. Moisture: ${data.moisture}%.`;
       } 
       else {
         response = "I can help with plant vitals! Try asking 'How is my plant?'";
@@ -139,27 +129,22 @@ export default function App() {
           setIsBusy(false);
           return;
         }
-
         const res = await createUserWithEmailAndPassword(auth, email, password);
         await sendEmailVerification(res.user);
-        
         await setDoc(doc(db, "users", res.user.uid), {
           moisture: 35, temp: 26, humidity: 60, isPumpActive: false, 
           isAutoMode: true, email: email, isVerified: false
         });
-
-        alert("Success! A verification link has been sent to your Gmail. Please check your inbox and spam folder.");
+        alert("Verification link sent! Check your inbox.");
         await signOut(auth);
         setAuthMode('login');
       }
-    } catch (err) { 
-      alert(err.message); 
-    }
+    } catch (err) { alert(err.message); }
     setIsBusy(false);
   };
 
   const handleUpdate = async (update) => {
-    if (!user) { setData(prev => ({...prev, ...update})); return; }
+    if (!user) return;
     setIsBusy(true);
     await updateDoc(doc(db, "users", user.uid), update);
     setTimeout(() => setIsBusy(false), 300);
@@ -182,43 +167,51 @@ export default function App() {
       <style>{`
         @keyframes loading { 0% { width: 0% } 100% { width: 100% } }
         @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        @keyframes fadeIn { from { opacity: 0; transform: scale(0.9); } to { opacity: 1; transform: scale(1); } }
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.4; } 100% { opacity: 1; } }
       `}</style>
 
       <div style={styles.phoneFrame}>
-        {/* VIEW: INITIAL SPLASH OR POST-LOGIN TRANSITION */}
+        {/* VIEW: SPLASH SCREENS */}
         {view === 'splash' || view === 'postLoginSplash' ? (
-          <div style={{...styles.splashBg, background: view === 'postLoginSplash' ? '#fff' : '#1B5E20'}}>
-            <Leaf size={70} color={view === 'postLoginSplash' ? '#1B5E20' : '#fff'} fill={view === 'postLoginSplash' ? '#1B5E20' : '#fff'} />
-            <h1 style={{color: view === 'postLoginSplash' ? '#1B5E20' : '#fff', fontWeight: '900'}}>
+          <div style={{
+            ...styles.splashBg, 
+            background: view === 'postLoginSplash' ? '#F8FFF9' : '#1B5E20', 
+            display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center'
+          }}>
+            <img 
+              src={logoUrl} 
+              alt="SmartSprout Logo" 
+              style={{ width: 140, height: 140, marginBottom: 15, objectFit: 'contain', animation: 'fadeIn 0.8s ease-out' }}
+            />
+            <h1 style={{color: view === 'postLoginSplash' ? '#1B5E20' : '#fff', fontWeight: '900', fontSize: 28, margin: 0}}>
                {view === 'postLoginSplash' ? 'Connecting...' : 'SmartSprout'}
             </h1>
-            <div style={{width: '150px', height: '4px', background: 'rgba(0,0,0,0.1)', borderRadius: 10, overflow: 'hidden', marginTop: 20}}>
+            <div style={{width: '150px', height: '4px', background: 'rgba(0,0,0,0.1)', borderRadius: 10, overflow: 'hidden', marginTop: 25}}>
               <div style={{height: '100%', background: '#1B5E20', animation: 'loading 2s infinite'}} />
             </div>
           </div>
         ) : view === 'auth' ? (
           <div style={styles.scrollArea}>
-            <div style={{...styles.authHeader, marginTop: 50}}>
-              <Leaf size={60} color="#1B5E20" />
+            <div style={{...styles.authHeader, marginTop: 50, display: 'flex', flexDirection: 'column', alignItems: 'center'}}>
+              <img 
+                src={logoUrl} 
+                alt="Auth Logo" 
+                style={{ width: 100, height: 100, marginBottom: 10, objectFit: 'contain', animation: 'fadeIn 0.6s ease-out' }} 
+              />
               <h2 style={{fontWeight: '900', color: '#1B5E20', fontSize: 28}}>{authMode === 'login' ? 'Welcome Back' : 'Join Us'}</h2>
             </div>
             <form onSubmit={handleAuth} style={{marginTop: 30}}>
               <input style={styles.inputField} type="email" placeholder="Email" value={email} onChange={(e)=>setEmail(e.target.value)} required />
               <input style={{...styles.inputField, marginTop: 10}} type="password" placeholder="Password" value={password} onChange={(e)=>setPassword(e.target.value)} required />
-              
               {authMode === 'login' && (
-                <p 
-                  onClick={handleForgotPassword} 
-                  style={{textAlign: 'right', color: '#1B5E20', cursor: 'pointer', fontSize: 12, marginTop: 8, fontWeight: '600'}}
-                >
+                <p onClick={handleForgotPassword} style={{textAlign: 'right', color: '#1B5E20', cursor: 'pointer', fontSize: 12, marginTop: 8, fontWeight: '600'}}>
                   Forgot Password?
                 </p>
               )}
-
               {authMode === 'register' && (
                 <input style={{...styles.inputField, marginTop: 10}} type="password" placeholder="Confirm Password" value={confirmPassword} onChange={(e)=>setConfirmPassword(e.target.value)} required />
               )}
-
               <button type="submit" style={{...styles.primaryBtn, marginTop: 20}} disabled={isBusy}>
                 {isBusy ? <Loader2 style={{animation:'spin 1s linear infinite'}}/> : (authMode === 'login' ? 'Login' : 'Register')}
               </button>
@@ -229,9 +222,11 @@ export default function App() {
           </div>
         ) : (
           <>
-            <div style={{padding: '30px 20px 10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
-              <div style={{fontWeight: 900, color: '#1B5E20', display: 'flex', alignItems: 'center', gap: 5}}>
-                <Leaf size={20} fill="#1B5E20"/> SmartSprout
+            {/* DASHBOARD HEADER */}
+            <div style={{padding: '30px 20px 10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#fff'}}>
+              <div style={{fontWeight: 900, color: '#1B5E20', display: 'flex', alignItems: 'center', gap: 8}}>
+                <img src={logoUrl} alt="Header Logo" style={{width: 28, height: 28, objectFit: 'contain'}} />
+                SmartSprout
               </div>
             </div>
 
@@ -260,9 +255,40 @@ export default function App() {
               )}
 
               {activeTab === 'stats' && (
-                <div style={{padding: 20}}>
-                    <h3 style={{color: '#1B5E20'}}>Environment Stats</h3>
-                    <p>System Online. Firestore sync active for: {user?.email}</p>
+                <div style={{ padding: '10px 20px', animation: 'fadeIn 0.5s ease' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+                    <h3 style={{ color: '#1B5E20', margin: 0 }}>Analytics</h3>
+                    <div style={{ fontSize: 11, color: '#4CAF50', display: 'flex', alignItems: 'center', gap: 5, fontWeight: 'bold' }}>
+                      <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#4CAF50', animation: 'pulse 2s infinite' }} />
+                      LIVE SYNC
+                    </div>
+                  </div>
+
+                  {/* Summary Card */}
+                  <div style={{ background: '#fff', padding: 20, borderRadius: 20, boxShadow: '0 4px 15px rgba(0,0,0,0.05)', marginBottom: 20, display: 'flex', justifyContent: 'space-around', textAlign: 'center' }}>
+                    <div>
+                      <div style={{ fontSize: 20, fontWeight: '900', color: '#1B5E20' }}>{data.moisture}%</div>
+                      <div style={{ fontSize: 10, color: '#999', marginTop: 4 }}>AVG MOISTURE</div>
+                    </div>
+                    <div style={{ width: 1, background: '#eee' }} />
+                    <div>
+                      <div style={{ fontSize: 20, fontWeight: '900', color: '#1B5E20' }}>{data.temp}°C</div>
+                      <div style={{ fontSize: 10, color: '#999', marginTop: 4 }}>AVG TEMP</div>
+                    </div>
+                  </div>
+
+                  {/* Chart Placeholder */}
+                  <div style={{ background: '#fff', padding: 30, borderRadius: 25, border: '2px dashed #E0E0E0', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', minHeight: 200 }}>
+                    <BarChart2 size={40} color="#CCC" style={{ marginBottom: 15 }} />
+                    <h4 style={{ margin: '0 0 8px', color: '#555' }}>Collecting Data</h4>
+                    <p style={{ fontSize: 12, color: '#999', lineHeight: 1.5, margin: 0 }}>
+                      History charts will appear here once the system logs more sensor readings from your device.
+                    </p>
+                  </div>
+
+                  <p style={{ fontSize: 11, color: '#BBB', textAlign: 'center', marginTop: 20 }}>
+                    Firestore Sync: {user?.email}
+                  </p>
                 </div>
               )}
 
@@ -275,6 +301,7 @@ export default function App() {
               )}
             </div>
 
+            {/* CHATBOT UI */}
             <div style={styles.chatHead} onClick={() => setIsChatOpen(!isChatOpen)}>
               {isChatOpen ? <X color="#fff" size={28}/> : <MessageCircle color="#fff" size={28}/>}
             </div>
