@@ -32,12 +32,13 @@ export default function App() {
   const [confirmPassword, setConfirmPassword] = useState('');
   
   // Initialize with hardware-aligned defaults
+  // IMPLEMENTATION: Set isAutoMode to false by default to prevent accidental pumping
   const [data, setData] = useState({ 
     moisture: 0, 
     temp: 0, 
     humidity: 0, 
     isPumpActive: false, 
-    isAutoMode: true 
+    isAutoMode: false 
   });
 
   const [chatInput, setChatInput] = useState('');
@@ -68,9 +69,9 @@ export default function App() {
             setData(prev => ({ ...prev, ...cloudData }));
             
             // AUTOMATION LOGIC: If AutoMode is ON, React handles the threshold
-            // This ensures the Pump stays in sync with the Cloud even if ESP32 restarts
+            // IMPLEMENTATION: Added check (moisture > 5) so the pump won't trigger if the sensor is in the air or unplugged
             if (cloudData.isAutoMode) {
-                const shouldBeWatering = cloudData.moisture < 30;
+                const shouldBeWatering = cloudData.moisture > 5 && cloudData.moisture < 30;
                 if (shouldBeWatering !== cloudData.isPumpActive) {
                     updateDoc(doc(db, "users", u.uid), { isPumpActive: shouldBeWatering });
                 }
@@ -172,9 +173,10 @@ export default function App() {
         }
         const res = await createUserWithEmailAndPassword(auth, email, password);
         await sendEmailVerification(res.user);
+        // IMPLEMENTATION: Default isAutoMode to false for new users
         await setDoc(doc(db, "users", res.user.uid), {
           moisture: 0, temp: 0, humidity: 0, isPumpActive: false, 
-          isAutoMode: true, email: email, isVerified: false
+          isAutoMode: false, email: email, isVerified: false
         });
         alert("Verification link sent!");
         await signOut(auth);
