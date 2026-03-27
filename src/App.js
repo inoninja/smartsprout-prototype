@@ -2,8 +2,6 @@ import React, { useState, useEffect, useRef } from 'react';
 import { auth, db } from './firebaseConfig';
 import { styles } from './styles';
 
-// --- LOCAL IMAGE IMPORT ---
-// Ensure 'logo.png' is in the same folder as this file.
 import logoLocal from './logo.png'; 
 
 import { 
@@ -21,7 +19,7 @@ import {
 } from 'lucide-react';
 
 export default function App() {
-  const [view, setView] = useState('splash'); // 'splash', 'auth', 'postLoginSplash', 'dashboard'
+  const [view, setView] = useState('splash');
   const [authMode, setAuthMode] = useState('login'); 
   const [activeTab, setActiveTab] = useState('home');
   const [isChatOpen, setIsChatOpen] = useState(false);
@@ -33,14 +31,20 @@ export default function App() {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   
-  const [data, setData] = useState({ moisture: 35, temp: 26, humidity: 60, isPumpActive: false, isAutoMode: true });
+  // Initialize with hardware-aligned defaults
+  const [data, setData] = useState({ 
+    moisture: 0, 
+    temp: 0, 
+    humidity: 0, 
+    isPumpActive: false, 
+    isAutoMode: true 
+  });
 
   const [chatInput, setChatInput] = useState('');
   const [messages, setMessages] = useState([
     { role: 'ai', text: "Hello! I'm Sprout AI. I'm connected to your plant's sensors. Ask me anything about its status!" }
   ]);
 
-  // SETTINGS
   const appTagline = "Growing smarter, together";
 
   const scrollToBottom = () => {
@@ -51,12 +55,27 @@ export default function App() {
     scrollToBottom();
   }, [messages]);
 
+  // --- HARDWARE SYNC LOGIC ---
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, (u) => {
       if (u && u.emailVerified) {
         setUser(u);
+        
+        // Listen to the specific document the ESP32 is updating
         const dataUnsub = onSnapshot(doc(db, "users", u.uid), (s) => {
-          if (s.exists()) setData(s.data());
+          if (s.exists()) {
+            const cloudData = s.data();
+            setData(prev => ({ ...prev, ...cloudData }));
+            
+            // AUTOMATION LOGIC: If AutoMode is ON, React handles the threshold
+            // This ensures the Pump stays in sync with the Cloud even if ESP32 restarts
+            if (cloudData.isAutoMode) {
+                const shouldBeWatering = cloudData.moisture < 30;
+                if (shouldBeWatering !== cloudData.isPumpActive) {
+                    updateDoc(doc(db, "users", u.uid), { isPumpActive: shouldBeWatering });
+                }
+            }
+          }
         });
 
         if (view === 'auth') {
@@ -121,20 +140,12 @@ export default function App() {
       else if (query.includes("humidity") || query.includes("air")) {
         response = `The humidity is currently ${data.humidity}%. High humidity is great for tropical plants!`;
       }
-      else if (query.includes("light") || query.includes("sun")) {
-        response = "I can see the brightness levels! Make sure your plant isn't in direct scorching sunlight for too long.";
-      }
       else if (query.includes("tip") || query.includes("help") || query.includes("advice")) {
-        const tips = [
-          "Don't overwater! Wait until the top inch of soil feels dry.",
-          "Rotate your plant every few weeks so it grows evenly toward the light.",
-          "Dust the leaves occasionally so the plant can breathe better.",
-          "Talk to your plants! Some say it helps them grow faster."
-        ];
+        const tips = ["Don't overwater!", "Rotate your plant!", "Dust the leaves!", "Talk to your plants!"];
         response = tips[Math.floor(Math.random() * tips.length)];
       }
       else {
-        response = "I'm not sure I understand. You can ask me about 'status', 'temperature', 'water', or for a 'gardening tip'!";
+        response = "I'm not sure I understand. Ask about 'status' or 'temperature'!";
       }
       setMessages(prev => [...prev, { role: 'ai', text: response }]);
       setIsBusy(false);
@@ -149,7 +160,7 @@ export default function App() {
         const userCredential = await signInWithEmailAndPassword(auth, email, password);
         if (!userCredential.user.emailVerified) {
           await signOut(auth);
-          alert("Please verify your email via Gmail before logging in!");
+          alert("Please verify your email!");
           setIsBusy(false);
           return;
         }
@@ -162,10 +173,10 @@ export default function App() {
         const res = await createUserWithEmailAndPassword(auth, email, password);
         await sendEmailVerification(res.user);
         await setDoc(doc(db, "users", res.user.uid), {
-          moisture: 35, temp: 26, humidity: 60, isPumpActive: false, 
+          moisture: 0, temp: 0, humidity: 0, isPumpActive: false, 
           isAutoMode: true, email: email, isVerified: false
         });
-        alert("Verification link sent! Check your inbox.");
+        alert("Verification link sent!");
         await signOut(auth);
         setAuthMode('login');
       }
@@ -173,10 +184,15 @@ export default function App() {
     setIsBusy(false);
   };
 
+  // Sends the command to Firestore for the ESP32 to read
   const handleUpdate = async (update) => {
     if (!user) return;
     setIsBusy(true);
-    await updateDoc(doc(db, "users", user.uid), update);
+    try {
+        await updateDoc(doc(db, "users", user.uid), update);
+    } catch (e) {
+        console.error("Cloud Sync Error:", e);
+    }
     setTimeout(() => setIsBusy(false), 300);
   };
 
@@ -202,22 +218,11 @@ export default function App() {
       `}</style>
 
       <div style={styles.phoneFrame}>
-        {/* VIEW: SPLASH SCREENS */}
         {view === 'splash' || view === 'postLoginSplash' ? (
-          <div style={{
-            ...styles.splashBg, 
-            background: '#FFFFFF', 
-            display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center'
-          }}>
-            <img 
-              src={logoLocal} 
-              alt="SmartSprout Logo" 
-              style={{ width: 140, height: 140, marginBottom: 15, objectFit: 'contain', animation: 'fadeIn 0.8s ease-out' }}
-            />
-            <h1 style={{color: '#1B5E20', fontWeight: '900', fontSize: 28, margin: 0}}>
-               {view === 'postLoginSplash' ? 'Connecting...' : 'SmartSprout'}
-            </h1>
-            <p style={{ color: '#666', fontSize: 14, marginTop: 5, fontStyle: 'italic' }}>{appTagline}</p>
+          <div style={{...styles.splashBg, background: '#FFFFFF', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center'}}>
+            <img src={logoLocal} alt="Logo" style={{ width: 140, height: 140, marginBottom: 15, animation: 'fadeIn 0.8s ease-out' }} />
+            <h1 style={{color: '#1B5E20', fontWeight: '900', fontSize: 28, margin: 0}}>{view === 'postLoginSplash' ? 'Connecting...' : 'SmartSprout'}</h1>
+            <p style={{ color: '#666', fontSize: 14, marginTop: 5 }}>{appTagline}</p>
             <div style={{width: '150px', height: '4px', background: 'rgba(0,0,0,0.1)', borderRadius: 10, overflow: 'hidden', marginTop: 25}}>
               <div style={{height: '100%', background: '#1B5E20', animation: 'loading 2s infinite'}} />
             </div>
@@ -225,41 +230,22 @@ export default function App() {
         ) : view === 'auth' ? (
           <div style={styles.scrollArea}>
             <div style={{...styles.authHeader, marginTop: 50, display: 'flex', flexDirection: 'column', alignItems: 'center'}}>
-              <img 
-                src={logoLocal} 
-                alt="Auth Logo" 
-                style={{ width: 100, height: 100, marginBottom: 10, objectFit: 'contain', animation: 'fadeIn 0.6s ease-out' }} 
-              />
-              <h2 style={{fontWeight: '900', color: '#1B5E20', fontSize: 28, marginBottom: 0}}>{authMode === 'login' ? 'Welcome Back' : 'Join Us'}</h2>
-              <p style={{ color: '#666', fontSize: 12, marginTop: 5 }}>{appTagline}</p>
+              <img src={logoLocal} alt="Auth" style={{ width: 100, height: 100, marginBottom: 10 }} />
+              <h2 style={{fontWeight: '900', color: '#1B5E20', fontSize: 28}}>{authMode === 'login' ? 'Welcome Back' : 'Join Us'}</h2>
             </div>
             <form onSubmit={handleAuth} style={{marginTop: 30}}>
               <input style={styles.inputField} type="email" placeholder="Email" value={email} onChange={(e)=>setEmail(e.target.value)} required />
               <input style={{...styles.inputField, marginTop: 10}} type="password" placeholder="Password" value={password} onChange={(e)=>setPassword(e.target.value)} required />
-              {authMode === 'login' && (
-                <p onClick={handleForgotPassword} style={{textAlign: 'right', color: '#1B5E20', cursor: 'pointer', fontSize: 12, marginTop: 8, fontWeight: '600'}}>
-                  Forgot Password?
-                </p>
-              )}
-              {authMode === 'register' && (
-                <input style={{...styles.inputField, marginTop: 10}} type="password" placeholder="Confirm Password" value={confirmPassword} onChange={(e)=>setConfirmPassword(e.target.value)} required />
-              )}
-              <button type="submit" style={{...styles.primaryBtn, marginTop: 20}} disabled={isBusy}>
-                {isBusy ? <Loader2 style={{animation:'spin 1s linear infinite'}}/> : (authMode === 'login' ? 'Login' : 'Register')}
-              </button>
+              {authMode === 'login' && <p onClick={handleForgotPassword} style={{textAlign: 'right', color: '#1B5E20', cursor: 'pointer', fontSize: 12, marginTop: 8}}>Forgot Password?</p>}
+              {authMode === 'register' && <input style={{...styles.inputField, marginTop: 10}} type="password" placeholder="Confirm Password" value={confirmPassword} onChange={(e)=>setConfirmPassword(e.target.value)} required />}
+              <button type="submit" style={{...styles.primaryBtn, marginTop: 20}} disabled={isBusy}>{isBusy ? <Loader2 style={{animation:'spin 1s linear infinite'}}/> : (authMode === 'login' ? 'Login' : 'Register')}</button>
             </form>
-            <p onClick={() => setAuthMode(authMode === 'login' ? 'register' : 'login')} style={{textAlign:'center', color:'#1B5E20', cursor:'pointer', fontSize: 13, marginTop: 15}}>
-              {authMode === 'login' ? "Need an account? Register" : "Have an account? Login"}
-            </p>
+            <p onClick={() => setAuthMode(authMode === 'login' ? 'register' : 'login')} style={{textAlign:'center', color:'#1B5E20', cursor:'pointer', fontSize: 13, marginTop: 15}}>{authMode === 'login' ? "Need an account? Register" : "Have an account? Login"}</p>
           </div>
         ) : (
           <>
-            {/* DASHBOARD HEADER */}
             <div style={{padding: '30px 20px 10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#fff'}}>
-              <div style={{fontWeight: 900, color: '#1B5E20', display: 'flex', alignItems: 'center', gap: 8}}>
-                <img src={logoLocal} alt="Header Logo" style={{width: 28, height: 28, objectFit: 'contain'}} />
-                SmartSprout
-              </div>
+              <div style={{fontWeight: 900, color: '#1B5E20', display: 'flex', alignItems: 'center', gap: 8}}><img src={logoLocal} alt="H" style={{width: 28}} /> SmartSprout</div>
             </div>
 
             <div style={styles.scrollArea}>
@@ -288,45 +274,26 @@ export default function App() {
 
               {activeTab === 'stats' && (
                 <div style={{ padding: '10px 20px', animation: 'fadeIn 0.5s ease' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-                    <h3 style={{ color: '#1B5E20', margin: 0 }}>Analytics</h3>
-                    <div style={{ fontSize: 11, color: '#4CAF50', display: 'flex', alignItems: 'center', gap: 5, fontWeight: 'bold' }}>
-                      <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#4CAF50', animation: 'pulse 2s infinite' }} />
-                      LIVE SYNC
-                    </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 20 }}>
+                    <h3 style={{ color: '#1B5E20' }}>Analytics</h3>
+                    <div style={{ fontSize: 11, color: '#4CAF50', fontWeight: 'bold' }}>LIVE SYNC</div>
                   </div>
-
-                  <div style={{ background: '#fff', padding: 20, borderRadius: 20, boxShadow: '0 4px 15px rgba(0,0,0,0.05)', marginBottom: 20, display: 'flex', justifyContent: 'space-around', textAlign: 'center' }}>
-                    <div>
-                      <div style={{ fontSize: 20, fontWeight: '900', color: '#1B5E20' }}>{data.moisture}%</div>
-                      <div style={{ fontSize: 10, color: '#999', marginTop: 4 }}>AVG MOISTURE</div>
-                    </div>
-                    <div style={{ width: 1, background: '#eee' }} />
-                    <div>
-                      <div style={{ fontSize: 20, fontWeight: '900', color: '#1B5E20' }}>{data.temp}°C</div>
-                      <div style={{ fontSize: 10, color: '#999', marginTop: 4 }}>AVG TEMP</div>
-                    </div>
+                  <div style={{ background: '#fff', padding: 20, borderRadius: 20, marginBottom: 20, display: 'flex', justifyContent: 'space-around', textAlign: 'center' }}>
+                    <div><div style={{ fontSize: 20, fontWeight: '900' }}>{data.moisture}%</div><div style={{ fontSize: 10 }}>AVG MOISTURE</div></div>
+                    <div><div style={{ fontSize: 20, fontWeight: '900' }}>{data.temp}°C</div><div style={{ fontSize: 10 }}>AVG TEMP</div></div>
                   </div>
-
-                  <div style={{ background: '#fff', padding: 30, borderRadius: 25, border: '2px dashed #E0E0E0', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', minHeight: 200 }}>
-                    <BarChart2 size={40} color="#CCC" style={{ marginBottom: 15 }} />
-                    <h4 style={{ margin: '0 0 8px', color: '#555' }}>Collecting Data</h4>
-                    <p style={{ fontSize: 12, color: '#999', lineHeight: 1.5, margin: 0 }}>
-                      History charts will appear here once the system logs more sensor readings from your device.
-                    </p>
+                  <div style={{ background: '#fff', padding: 30, borderRadius: 25, border: '2px dashed #E0E0E0', textAlign: 'center' }}>
+                    <BarChart2 size={40} color="#CCC" />
+                    <p style={{ fontSize: 12, color: '#999' }}>History charts will appear here as the ESP32 logs data.</p>
                   </div>
-
-                  <p style={{ fontSize: 11, color: '#BBB', textAlign: 'center', marginTop: 20 }}>
-                    Firestore Sync: {user?.email}
-                  </p>
                 </div>
               )}
 
               {activeTab === 'account' && (
                 <div style={{textAlign: 'center', paddingTop: 20}}>
-                  <div style={{width: 80, height: 80, background: '#F0F0F0', borderRadius: 40, margin: '20px auto', display: 'flex', justifyContent: 'center', alignItems: 'center'}}><User size={40} color="#1B5E20"/></div>
+                  <div style={{width: 80, height: 80, background: '#F0F0F0', borderRadius: 40, margin: '20px auto'}}><User size={40} color="#1B5E20"/></div>
                   <h3>{user ? user.email : "Guest"}</h3>
-                  <button style={{...styles.primaryBtn, backgroundColor: '#FF5252', width: '80%', margin: '20px auto'}} onClick={handleLogout}>Sign Out</button>
+                  <button style={{...styles.primaryBtn, backgroundColor: '#FF5252', width: '80%'}} onClick={handleLogout}>Sign Out</button>
                 </div>
               )}
             </div>
@@ -337,23 +304,16 @@ export default function App() {
 
             {isChatOpen && (
               <div style={styles.chatWindow}>
-                <div style={{padding: 15, background: '#1B5E20', color: '#fff', fontWeight: 'bold', display: 'flex', justifyContent: 'space-between'}}>
-                  Sprout AI <X size={18} style={{cursor: 'pointer'}} onClick={() => setIsChatOpen(false)}/>
-                </div>
-                <div style={{flex: 1, padding: 15, fontSize: 13, background: '#f9f9f9', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 10}}>
+                <div style={{padding: 15, background: '#1B5E20', color: '#fff', fontWeight: 'bold'}}>Sprout AI</div>
+                <div style={{flex: 1, padding: 15, background: '#f9f9f9', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 10}}>
                     {messages.map((m, i) => (
-                      <div key={i} style={{
-                        alignSelf: m.role === 'user' ? 'flex-end' : 'flex-start',
-                        background: m.role === 'user' ? '#1B5E20' : '#E8F5E9',
-                        color: m.role === 'user' ? '#fff' : '#1B5E20',
-                        padding: '10px', borderRadius: '12px', maxWidth: '85%'
-                      }}>{m.text}</div>
+                      <div key={i} style={{alignSelf: m.role === 'user' ? 'flex-end' : 'flex-start', background: m.role === 'user' ? '#1B5E20' : '#E8F5E9', color: m.role === 'user' ? '#fff' : '#1B5E20', padding: '10px', borderRadius: '12px'}}>{m.text}</div>
                     ))}
                     <div ref={chatEndRef} />
                 </div>
-                <div style={{padding: 10, display: 'flex', gap: 8, borderTop: '1px solid #eee'}}>
-                  <input style={{flex: 1, border: 'none', background: '#F0F0F0', padding: 10, borderRadius: 20}} placeholder="Ask about your plant..." value={chatInput} onChange={(e) => setChatInput(e.target.value)} onKeyPress={(e) => e.key === 'Enter' && handleChat()}/>
-                  <div style={{width: 35, height: 35, background: '#1B5E20', borderRadius: '50%', display: 'flex', justifyContent: 'center', alignItems: 'center', cursor: 'pointer'}} onClick={handleChat}><Send size={16} color="#fff"/></div>
+                <div style={{padding: 10, display: 'flex', gap: 8}}>
+                  <input style={{flex: 1, background: '#F0F0F0', padding: 10, borderRadius: 20}} placeholder="Ask about status..." value={chatInput} onChange={(e) => setChatInput(e.target.value)} onKeyPress={(e) => e.key === 'Enter' && handleChat()}/>
+                  <div onClick={handleChat}><Send size={16} color="#fff"/></div>
                 </div>
               </div>
             )}
