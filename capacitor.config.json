@@ -1,6 +1,7 @@
 {
   "appId": "com.yourname.smartsprout",
   "appName": "SmartSprout",
+  "version": "1.0.2",
   "webDir": "dist",
   "bundledWebRuntime": false,
   "server": {

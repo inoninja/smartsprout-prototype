@@ -126,7 +126,7 @@ export default function App() {
         response = "Hi there! I'm Sprout AI, your plant's personal assistant. How can I help you today?";
       }
       else if (query.includes("status") || query.includes("how") || query.includes("doing")) {
-        response = `The plant is doing great! Moisture: ${data.moisture}%, Temp: ${data.temp.toFixed(1)}°C, Humidity: ${data.humidity}%. ${data.moisture < 30 ? "It looks a bit thirsty though!" : "Conditions are optimal."}`;
+        response = `The plant is doing great! Moisture: ${data.moisture}%, Temp: ${data.temp.toFixed(1)}°C, Humidity: ${data.humidity.toFixed(1)}%. ${data.moisture < 30 ? "It looks a bit thirsty though!" : "Conditions are optimal."}`;
       } 
       else if (query.includes("pump") || query.includes("water")) {
         if (data.isAutoMode) {
@@ -139,7 +139,7 @@ export default function App() {
         response = `The ambient temperature is ${data.temp.toFixed(1)}°C. Most indoor plants prefer between 18°C and 24°C, so this is ${data.temp > 25 ? "a bit warm." : "just right!"}`;
       }
       else if (query.includes("humidity") || query.includes("air")) {
-        response = `The humidity is currently ${data.humidity}%. High humidity is great for tropical plants!`;
+        response = `The humidity is currently ${data.humidity.toFixed(1)}%. High humidity is great for tropical plants!`;
       }
       else if (query.includes("tip") || query.includes("help") || query.includes("advice")) {
         const tips = ["Don't overwater!", "Rotate your plant!", "Dust the leaves!", "Talk to your plants!"];
@@ -402,7 +402,7 @@ export default function App() {
                   </div>
                   <div style={{...styles.grid, gap: 15}} className="grid-gap">
                     <div style={styles.card}><Thermometer color="#1B5E20" size={24}/><h3 className="card-value">{data.temp.toFixed(1)}°C</h3></div>
-                    <div style={styles.card}><Sun color="#1B5E20" size={24}/><h3 className="card-value">{data.humidity}%</h3></div>
+                    <div style={styles.card}><Sun color="#1B5E20" size={24}/><h3 className="card-value">{data.humidity.toFixed(1)}%</h3></div>
                   </div>
                   <div style={styles.controlBox}>
                     <span style={{fontWeight: 'bold'}}>Auto Mode</span>
