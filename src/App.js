@@ -14,8 +14,8 @@ import {
 } from "firebase/auth";
 import { doc, onSnapshot, updateDoc, setDoc } from "firebase/firestore";
 import { 
-  Home, BarChart2, User, Power, Thermometer, 
-  Sun, MessageCircle, Send, X, Loader2 
+  Home, BookOpen, User, Power, Thermometer, 
+  Sun, MessageCircle, Send, X, Loader2, Droplet, AlertCircle 
 } from 'lucide-react';
 
 export default function App() {
@@ -274,19 +274,75 @@ export default function App() {
                 </>
               )}
 
-              {activeTab === 'stats' && (
+              {activeTab === 'manual' && (
                 <div style={{ padding: '10px 20px', animation: 'fadeIn 0.5s ease' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 20 }}>
-                    <h3 style={{ color: '#1B5E20' }}>Analytics</h3>
-                    <div style={{ fontSize: 11, color: '#4CAF50', fontWeight: 'bold' }}>LIVE SYNC</div>
+                    <h3 style={{ color: '#1B5E20' }}>User Manual</h3>
+                    <div style={{ fontSize: 11, color: '#4CAF50', fontWeight: 'bold' }}>GUIDE</div>
                   </div>
-                  <div style={{ background: '#fff', padding: 20, borderRadius: 20, marginBottom: 20, display: 'flex', justifyContent: 'space-around', textAlign: 'center' }}>
-                    <div><div style={{ fontSize: 20, fontWeight: '900' }}>{data.moisture}%</div><div style={{ fontSize: 10 }}>AVG MOISTURE</div></div>
-                    <div><div style={{ fontSize: 20, fontWeight: '900' }}>{data.temp}°C</div><div style={{ fontSize: 10 }}>AVG TEMP</div></div>
+                  
+                  <div style={{ background: '#fff', padding: 20, borderRadius: 20, marginBottom: 20 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 15 }}>
+                      <Power size={20} color="#1B5E20" />
+                      <h4 style={{ color: '#333', margin: 0 }}>Pump Control</h4>
+                    </div>
+                    <p style={{ fontSize: 13, color: '#666', lineHeight: 1.5, marginBottom: 10 }}>
+                      • <strong>Manual Mode:</strong> Tap START PUMP to water manually (10 sec max)
+                    </p>
+                    <p style={{ fontSize: 13, color: '#666', lineHeight: 1.5 }}>
+                      • <strong>Auto Mode:</strong> Toggle ON - Pump activates when moisture &lt; 30%
+                    </p>
                   </div>
-                  <div style={{ background: '#fff', padding: 30, borderRadius: 25, border: '2px dashed #E0E0E0', textAlign: 'center' }}>
-                    <BarChart2 size={40} color="#CCC" />
-                    <p style={{ fontSize: 12, color: '#999' }}>History charts will appear here as the ESP32 logs data.</p>
+
+                  <div style={{ background: '#fff', padding: 20, borderRadius: 20, marginBottom: 20 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 15 }}>
+                      <Droplet size={20} color="#1B5E20" />
+                      <h4 style={{ color: '#333', margin: 0 }}>Moisture Levels</h4>
+                    </div>
+                    <p style={{ fontSize: 13, color: '#666', lineHeight: 1.5, marginBottom: 8 }}>
+                      • <strong>0-20%:</strong> Very Dry - Water immediately
+                    </p>
+                    <p style={{ fontSize: 13, color: '#666', lineHeight: 1.5, marginBottom: 8 }}>
+                      • <strong>21-40%:</strong> Dry - Good time to water
+                    </p>
+                    <p style={{ fontSize: 13, color: '#666', lineHeight: 1.5, marginBottom: 8 }}>
+                      • <strong>41-60%:</strong> Moist - Optimal range
+                    </p>
+                    <p style={{ fontSize: 13, color: '#666', lineHeight: 1.5 }}>
+                      • <strong>61-100%:</strong> Wet - Don't water
+                    </p>
+                  </div>
+
+                  <div style={{ background: '#fff', padding: 20, borderRadius: 20, marginBottom: 20 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 15 }}>
+                      <Thermometer size={20} color="#1B5E20" />
+                      <h4 style={{ color: '#333', margin: 0 }}>Ideal Conditions</h4>
+                    </div>
+                    <p style={{ fontSize: 13, color: '#666', lineHeight: 1.5, marginBottom: 8 }}>
+                      • <strong>Temperature:</strong> 18-24°C (65-75°F)
+                    </p>
+                    <p style={{ fontSize: 13, color: '#666', lineHeight: 1.5, marginBottom: 8 }}>
+                      • <strong>Humidity:</strong> 40-60% for most houseplants
+                    </p>
+                    <p style={{ fontSize: 13, color: '#666', lineHeight: 1.5 }}>
+                      • <strong>Light:</strong> Bright indirect sunlight
+                    </p>
+                  </div>
+
+                  <div style={{ background: '#FFF3E0', padding: 20, borderRadius: 20, borderLeft: '4px solid #FF9800' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 15 }}>
+                      <AlertCircle size={20} color="#FF9800" />
+                      <h4 style={{ color: '#333', margin: 0 }}>Troubleshooting</h4>
+                    </div>
+                    <p style={{ fontSize: 13, color: '#666', lineHeight: 1.5, marginBottom: 8 }}>
+                      ❌ <strong>Pump not working?</strong> Check WiFi and power
+                    </p>
+                    <p style={{ fontSize: 13, color: '#666', lineHeight: 1.5, marginBottom: 8 }}>
+                      ❌ <strong>No sensor data?</strong> Ensure ESP32 is powered
+                    </p>
+                    <p style={{ fontSize: 13, color: '#666', lineHeight: 1.5 }}>
+                      💡 <strong>Tip:</strong> Use chat assistant for real-time help!
+                    </p>
                   </div>
                 </div>
               )}
@@ -324,7 +380,7 @@ export default function App() {
 
             <nav style={styles.navbar}>
               <div style={activeTab === 'home' ? styles.navActive : styles.navItem} onClick={() => handleNavAction('home')}><Home size={24}/><span>Home</span></div>
-              <div style={activeTab === 'stats' ? styles.navActive : styles.navItem} onClick={() => handleNavAction('stats')}><BarChart2 size={24}/><span>Stats</span></div>
+              <div style={activeTab === 'manual' ? styles.navActive : styles.navItem} onClick={() => handleNavAction('manual')}><BookOpen size={24}/><span>Manual</span></div>
               <div style={activeTab === 'account' ? styles.navActive : styles.navItem} onClick={() => handleNavAction('account')}><User size={24}/><span>Account</span></div>
             </nav>
           </>
