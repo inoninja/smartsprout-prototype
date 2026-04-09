@@ -33,7 +33,9 @@ export const styles = {
     flex: 1, 
     overflowY: 'auto', 
     padding: '20px', 
-    paddingBottom: '120px' // Increased to prevent navbar overlap
+    paddingBottom: '120px',
+    maxHeight: 'calc(100vh - 180px)',
+    WebkitOverflowScrolling: 'touch',
   },
   
   // Auth Layout

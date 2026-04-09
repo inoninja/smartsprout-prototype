@@ -217,11 +217,154 @@ export default function App() {
         @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
         @keyframes fadeIn { from { opacity: 0; transform: scale(0.9); } to { opacity: 1; transform: scale(1); } }
         @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.4; } 100% { opacity: 1; } }
+        
+        /* Responsive Design */
+        * {
+          margin: 0;
+          padding: 0;
+          box-sizing: border-box;
+        }
+        
+        body {
+          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          min-height: 100vh;
+        }
+        
+        /* Mobile First - Default styles */
+        .responsive-container {
+          width: 100%;
+          min-height: 100vh;
+          background: #F5F5F5;
+          position: relative;
+          box-shadow: none;
+          border-radius: 0;
+        }
+        
+        /* Smooth scrolling for all scrollable areas */
+        .scroll-area-landscape, 
+        .responsive-container [style*="overflowY: auto"] {
+          -webkit-overflow-scrolling: touch;
+          scroll-behavior: smooth;
+          overscroll-behavior: contain;
+        }
+        
+        /* For very small screens (under 600px height) */
+        @media (max-height: 600px) {
+          .scroll-area-landscape {
+            max-height: calc(100vh - 140px) !important;
+          }
+        }
+        
+        /* Small phones (iPhone SE, etc.) - up to 375px */
+        @media (min-width: 320px) and (max-width: 375px) {
+          .responsive-container {
+            max-width: 100%;
+          }
+          .moisture-number {
+            font-size: 56px !important;
+          }
+          .card-value {
+            font-size: 20px !important;
+          }
+          .hero-padding {
+            padding: 30px !important;
+          }
+        }
+        
+        /* Medium phones (iPhone 12/13/14, Pixel) - 376px to 428px */
+        @media (min-width: 376px) and (max-width: 428px) {
+          .responsive-container {
+            max-width: 100%;
+          }
+          .moisture-number {
+            font-size: 64px !important;
+          }
+        }
+        
+        /* Large phones (iPhone Plus, Android large) - 429px to 500px */
+        @media (min-width: 429px) and (max-width: 500px) {
+          .responsive-container {
+            max-width: 100%;
+          }
+          .moisture-number {
+            font-size: 72px !important;
+          }
+        }
+        
+        /* Tablets (iPad mini, iPad) - 501px to 768px */
+        @media (min-width: 501px) and (max-width: 768px) {
+          .responsive-container {
+            max-width: 550px;
+            border-radius: 30px;
+            margin: 20px auto;
+            min-height: auto;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+          }
+          .moisture-number {
+            font-size: 80px !important;
+          }
+          .grid-gap {
+            gap: 20px !important;
+          }
+        }
+        
+        /* Small desktops - 769px to 1024px */
+        @media (min-width: 769px) and (max-width: 1024px) {
+          .responsive-container {
+            max-width: 650px;
+            border-radius: 35px;
+            margin: 30px auto;
+            min-height: auto;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+          }
+          .moisture-number {
+            font-size: 88px !important;
+          }
+          .grid-gap {
+            gap: 25px !important;
+          }
+        }
+        
+        /* Desktop / Large screens - 1025px and above */
+        @media (min-width: 1025px) {
+          .responsive-container {
+            max-width: 750px;
+            border-radius: 40px;
+            margin: 40px auto;
+            min-height: auto;
+            box-shadow: 0 30px 80px rgba(0,0,0,0.25);
+          }
+          .moisture-number {
+            font-size: 96px !important;
+          }
+          .grid-gap {
+            gap: 30px !important;
+          }
+        }
+        
+        /* Landscape mode detection */
+        @media (orientation: landscape) and (max-height: 500px) {
+          .responsive-container {
+            max-width: 80%;
+            margin: 10px auto;
+          }
+          .moisture-number {
+            font-size: 40px !important;
+          }
+          .hero-padding {
+            padding: 20px !important;
+          }
+          .scroll-area-landscape {
+            max-height: 60vh !important;
+            overflow-y: auto !important;
+          }
+        }
       `}</style>
 
-      <div style={styles.phoneFrame}>
+      <div className="responsive-container">
         {view === 'splash' || view === 'postLoginSplash' ? (
-          <div style={{...styles.splashBg, background: '#FFFFFF', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center'}}>
+          <div style={{...styles.splashBg, background: '#FFFFFF', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '100vh'}}>
             <img src={logoLocal} alt="Logo" style={{ width: 'auto', height: 140, marginBottom: 15, animation: 'fadeIn 0.8s ease-out', objectFit: 'contain' }} />
             <h1 style={{color: '#1B5E20', fontWeight: '900', fontSize: 28, margin: 0}}>{view === 'postLoginSplash' ? 'Connecting...' : 'SmartSprout'}</h1>
             <p style={{ color: '#666', fontSize: 14, marginTop: 5 }}>{appTagline}</p>
@@ -250,16 +393,16 @@ export default function App() {
               <div style={{fontWeight: 900, color: '#1B5E20', display: 'flex', alignItems: 'center', gap: 8}}><img src={logoLocal} alt="H" style={{width: 28, height: 'auto', objectFit: 'contain'}} /> SmartSprout</div>
             </div>
 
-            <div style={styles.scrollArea}>
+            <div style={{...styles.scrollArea, ...(window.innerHeight < 500 ? { maxHeight: '60vh', overflowY: 'auto' } : {})}} className="scroll-area-landscape">
               {activeTab === 'home' && (
                 <>
-                  <div style={{...styles.hero, background: data.isPumpActive ? '#1565C0' : '#1B5E20', padding: 40, borderRadius: 30, color: '#fff', textAlign: 'center', marginBottom: 20}}>
-                    <h1 style={{fontSize: '72px', fontWeight: '900', margin: 0}}>{data.moisture}%</h1>
+                  <div style={{...styles.hero, background: data.isPumpActive ? '#1565C0' : '#1B5E20', padding: 40, borderRadius: 30, color: '#fff', textAlign: 'center', marginBottom: 20}} className="hero-padding">
+                    <h1 style={{fontSize: '72px', fontWeight: '900', margin: 0}} className="moisture-number">{data.moisture}%</h1>
                     <p style={{fontSize: 12, letterSpacing: 2, opacity: 0.8}}>SOIL MOISTURE</p>
                   </div>
-                  <div style={styles.grid}>
-                    <div style={styles.card}><Thermometer color="#1B5E20" size={24}/><h3>{data.temp}°C</h3></div>
-                    <div style={styles.card}><Sun color="#1B5E20" size={24}/><h3>{data.humidity}%</h3></div>
+                  <div style={{...styles.grid, gap: 15}} className="grid-gap">
+                    <div style={styles.card}><Thermometer color="#1B5E20" size={24}/><h3 className="card-value">{data.temp}°C</h3></div>
+                    <div style={styles.card}><Sun color="#1B5E20" size={24}/><h3 className="card-value">{data.humidity}%</h3></div>
                   </div>
                   <div style={styles.controlBox}>
                     <span style={{fontWeight: 'bold'}}>Auto Mode</span>
