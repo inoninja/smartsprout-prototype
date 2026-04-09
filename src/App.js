@@ -222,7 +222,7 @@ export default function App() {
       <div style={styles.phoneFrame}>
         {view === 'splash' || view === 'postLoginSplash' ? (
           <div style={{...styles.splashBg, background: '#FFFFFF', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center'}}>
-            <img src={logoLocal} alt="Logo" style={{ width: 140, height: 140, marginBottom: 15, animation: 'fadeIn 0.8s ease-out' }} />
+            <img src={logoLocal} alt="Logo" style={{ width: 'auto', height: 140, marginBottom: 15, animation: 'fadeIn 0.8s ease-out', objectFit: 'contain' }} />
             <h1 style={{color: '#1B5E20', fontWeight: '900', fontSize: 28, margin: 0}}>{view === 'postLoginSplash' ? 'Connecting...' : 'SmartSprout'}</h1>
             <p style={{ color: '#666', fontSize: 14, marginTop: 5 }}>{appTagline}</p>
             <div style={{width: '150px', height: '4px', background: 'rgba(0,0,0,0.1)', borderRadius: 10, overflow: 'hidden', marginTop: 25}}>
@@ -232,7 +232,7 @@ export default function App() {
         ) : view === 'auth' ? (
           <div style={styles.scrollArea}>
             <div style={{...styles.authHeader, marginTop: 50, display: 'flex', flexDirection: 'column', alignItems: 'center'}}>
-              <img src={logoLocal} alt="Auth" style={{ width: 100, height: 100, marginBottom: 10 }} />
+              <img src={logoLocal} alt="Auth" style={{ width: 'auto', height: 100, marginBottom: 10, objectFit: 'contain' }} />
               <h2 style={{fontWeight: '900', color: '#1B5E20', fontSize: 28}}>{authMode === 'login' ? 'Welcome Back' : 'Join Us'}</h2>
             </div>
             <form onSubmit={handleAuth} style={{marginTop: 30}}>
@@ -247,7 +247,7 @@ export default function App() {
         ) : (
           <>
             <div style={{padding: '30px 20px 10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#fff'}}>
-              <div style={{fontWeight: 900, color: '#1B5E20', display: 'flex', alignItems: 'center', gap: 8}}><img src={logoLocal} alt="H" style={{width: 28}} /> SmartSprout</div>
+              <div style={{fontWeight: 900, color: '#1B5E20', display: 'flex', alignItems: 'center', gap: 8}}><img src={logoLocal} alt="H" style={{width: 28, height: 'auto', objectFit: 'contain'}} /> SmartSprout</div>
             </div>
 
             <div style={styles.scrollArea}>
