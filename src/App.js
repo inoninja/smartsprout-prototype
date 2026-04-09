@@ -292,10 +292,12 @@ export default function App() {
               )}
 
               {activeTab === 'account' && (
-                <div style={{textAlign: 'center', paddingTop: 20}}>
-                  <div style={{width: 80, height: 80, background: '#F0F0F0', borderRadius: 40, margin: '20px auto'}}><User size={40} color="#1B5E20"/></div>
-                  <h3>{user ? user.email : "Guest"}</h3>
-                  <button style={{...styles.primaryBtn, backgroundColor: '#FF5252', width: '80%'}} onClick={handleLogout}>Sign Out</button>
+                <div style={{display: 'flex', flexDirection: 'column', alignItems: 'center', paddingTop: '15px'}}>
+                  <div style={{width: 100, height: 100, background: '#E8F5E9', borderRadius: 50, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 15}}>
+                    <User size={50} color="#1B5E20"/>
+                  </div>
+                  <h3 style={{color: '#333', marginBottom: 20, fontSize: 18}}>{user ? user.email : "Guest"}</h3>
+                  <button style={{...styles.primaryBtn, backgroundColor: '#FF5252', width: '200px', padding: '12px 24px'}} onClick={handleLogout}>Sign Out</button>
                 </div>
               )}
             </div>
